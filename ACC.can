@@ -1,0 +1,31 @@
+/*@!Encoding:1252*/
+includes
+{
+  
+}
+
+variables
+{
+  byte acc_active;
+  
+}
+
+on message ACC_State
+{
+
+  
+  
+  
+  
+}
+
+on signal Display_State::ACC_State
+{
+  write("Signal Display State");
+}
+
+
+on signal ACC_State::ACC_State
+{
+  write("Intern ACC State");
+}
