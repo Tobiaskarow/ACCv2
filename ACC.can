@@ -6,26 +6,88 @@ includes
 
 variables
 {
-  byte acc_active;
+  message ACC_Accelerate msgAccel;
+  message ACC_Brake msgBrake;
+  message Display_State msdDisp; 
+}
+
+void sendACCAccelerate(int value)
+{
+  //Verhalten: Sende Nachricht ACC_Accelerate mit Pedalweg
   
+}
+
+void sendACCBrake(int value)
+{
+  //Verhalten: Sende Nachricht ACC_Break mit Pedalweg
+  
+}
+
+void sendSettings()
+{
+  //Verhalten: Sende Nachricht Display_State mit den aktuellen Einstellungen
+  
+}
+
+on start
+{
+ //Initial Werte senden! 
 }
 
 on message ACC_State
-{
+{ //Wird gesendet, wenn sich die ACC-Einstellungen ändern (an/aus)
+  write("Message ACC State: %d", this.ACC_State );
+  
+  if (this.ACC_State == 1)
+  {
+    putValue(DUI_ACC_State, 1); //TODO Message ans Display
+  }
+  else
+  {
+    putValue(DUI_ACC_State, 0);
+  }
+  
 
-  
-  
-  
+}
+
+on message Car1_State
+{ //Achten Sie darauf, die ACC-Komponente zu deaktiveren, wenn die Geschwindigkeit
+  //weniger als 25 km/h beträgt. Senden Sie in diesem Fall eine ACC_Error Nachricht. 
+  write("Message: Car1_State received");
   
 }
 
-on signal Display_State::ACC_State
-{
-  write("Signal Display State");
+on message Distance_Adjust
+{ //Wird gesendet, wenn sich die gewünschte ACC-Entfernung ändert. Übernehmen Sie die
+  //Werte, falls sie gültig sind (10 < x < 30).
+  write("Message: Distance_Adjust received");
+  
+}
+
+on message Distance_Current
+{ //Hier gilt es, den empfangenen Abstandswert zu analysieren und durch Bremsen und
+  //Beschleunigen entsprechend darauf zu reagieren. Dieser Teil der Implementierung wird
+  //Ihre eigentliche ACC-Regelung enthalten.
+  write("Message: Distance_Current received");
+  
+}
+
+on message Manual_Brake
+{ //Wird manuell gebremst oder beschleunigt, so muss sich das ACC deaktiveren.
+  write("Message: Manual_Brake received");
+  
 }
 
 
-on signal ACC_State::ACC_State
-{
-  write("Intern ACC State");
+on message Manual_Accelerate
+{ //Wird manuell gebremst oder beschleunigt, so muss sich das ACC deaktiveren.
+  write("Message: Manual_Accelerate received");
+  
+}
+
+on message Speed_Adjust
+{ //Wird gesendet, wenn eine andere ACC-Wunschgeschwindigkeit eingestellt wird. Sind die
+  //Werte im erlaubten Bereich (30 < x < 180), so ist die Einstellungen zu übernehmen.
+  write("Message: Speed_Adjust received");
+  
 }
