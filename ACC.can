@@ -8,7 +8,14 @@ variables
 {
   message ACC_Accelerate msgAccel;
   message ACC_Brake msgBrake;
-  message Display_State msdDisp; 
+  message Display_State msgDisplay;
+  message ACC_Error msgError;
+  int acc_err;
+  int acc_active;
+  byte car_speed;
+  dword car_position;
+  byte acc_distance;
+  byte acc_speed;
 }
 
 void sendACCAccelerate(int value)
@@ -26,68 +33,111 @@ void sendACCBrake(int value)
 void sendSettings()
 {
   //Verhalten: Sende Nachricht Display_State mit den aktuellen Einstellungen
-  
+  output(msgDisplay);
 }
 
 on start
 {
- //Initial Werte senden! 
+ //Initial Werte senden!
+  acc_err = 0;
+  acc_active = 0;
+  msgDisplay.ACC_State = 0;
+  sendSettings();
+  
 }
 
 on message ACC_State
 { //Wird gesendet, wenn sich die ACC-Einstellungen ändern (an/aus)
-  write("Message ACC State: %d", this.ACC_State );
+  //write("Message ACC State: %d", this.ACC_State );
   
   if (this.ACC_State == 1)
   {
-    putValue(DUI_ACC_State, 1); //TODO Message ans Display
+    msgDisplay.ACC_State = 1;
+    acc_err = 0;
+    acc_active = 1;
   }
   else
   {
-    putValue(DUI_ACC_State, 0);
+    msgDisplay.ACC_State = 0;
+    acc_active = 0;
   }
-  
+  sendSettings();
 
 }
 
 on message Car1_State
 { //Achten Sie darauf, die ACC-Komponente zu deaktiveren, wenn die Geschwindigkeit
   //weniger als 25 km/h beträgt. Senden Sie in diesem Fall eine ACC_Error Nachricht. 
-  write("Message: Car1_State received");
+  //write("Message: Car1_State received");
+
+  
+  car_speed = this.Speed_Car1_Current;
+  car_position = this.Position_Car1;
+  
+  if (this.Speed_Car1_Current < 25 && acc_active == 1)
+  {
+    if (acc_err == 0) 
+    {
+      acc_err = 1;
+      msgError.ACC_Error = 1;
+      output(msgError);
+    }
+    
+    acc_active = 0;
+    msgDisplay.ACC_State = 0;
+    sendSettings();
+  }
+  
+
   
 }
 
 on message Distance_Adjust
 { //Wird gesendet, wenn sich die gewünschte ACC-Entfernung ändert. Übernehmen Sie die
   //Werte, falls sie gültig sind (10 < x < 30).
-  write("Message: Distance_Adjust received");
+  write("Message: Distance_Adjust received => %d", (this.Distance_Adjust & 0x7F));
   
+  if (this.Distance_Adjust > 30 && this.Distance_Adjust < 180)
+  {
+    acc_distance = (this.Distance_Adjust & 0x7F);    
+  }
+  write("Distance change: %d", acc_distance);
+}
+
+on message Speed_Adjust
+{ //Wird gesendet, wenn eine andere ACC-Wunschgeschwindigkeit eingestellt wird. Sind die
+  //Werte im erlaubten Bereich (30 < x < 180), so ist die Einstellungen zu übernehmen.
+  write("Message: Speed_Adjust received => %d", this.Speed_Adjust);
+  if (this.Speed_Adjust > 30 && this.Speed_Adjust < 180)
+  {
+    acc_speed = this.Speed_Adjust;    
+  }
+  write("Speed change: %d", acc_speed);
 }
 
 on message Distance_Current
 { //Hier gilt es, den empfangenen Abstandswert zu analysieren und durch Bremsen und
   //Beschleunigen entsprechend darauf zu reagieren. Dieser Teil der Implementierung wird
   //Ihre eigentliche ACC-Regelung enthalten.
-  write("Message: Distance_Current received");
+  //write("Message: Distance_Current received");
   
 }
 
 on message Manual_Brake
 { //Wird manuell gebremst oder beschleunigt, so muss sich das ACC deaktiveren.
   write("Message: Manual_Brake received");
-  
+  msgDisplay.ACC_State = 0;
+  acc_active = 0;
+  sendSettings();
 }
 
 
 on message Manual_Accelerate
 { //Wird manuell gebremst oder beschleunigt, so muss sich das ACC deaktiveren.
   write("Message: Manual_Accelerate received");
-  
+  msgDisplay.ACC_State = 0;
+  acc_active = 0;
+  sendSettings();
 }
 
-on message Speed_Adjust
-{ //Wird gesendet, wenn eine andere ACC-Wunschgeschwindigkeit eingestellt wird. Sind die
-  //Werte im erlaubten Bereich (30 < x < 180), so ist die Einstellungen zu übernehmen.
-  write("Message: Speed_Adjust received");
-  
-}
+
