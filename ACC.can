@@ -11,13 +11,19 @@ variables
   message ACC_Slowdown msgSlowdown;
   message Display_State msgDisplay;
   message ACC_Error msgError;
+  
   int acc_err;
   int acc_active;
-  byte car_speed;
   dword car_position;
-  byte acc_distance;
+  
+  byte car_speed;
   byte acc_speed;
+ 
+  byte acc_distance;
+  
   dword car_distance;
+  dword car_distance_time;
+  
 }
 
 void sendACCAccelerate(int value)
@@ -65,13 +71,13 @@ on message ACC_State
 { //Wird gesendet, wenn sich die ACC-Einstellungen ändern (an/aus)
   //write("Message ACC State: %d", this.ACC_State );
   
-  if (this.ACC_State == 1  && (car_speed > 30 && car_speed <180))
+  if (this.ACC_State == 1  && (car_speed > 30 && car_speed <180) && car_distance_time > 10)
   {
     msgDisplay.ACC_State = 1;
     acc_err = 0;
     acc_active = 1;
     acc_speed = car_speed;
-   
+    acc_distance = car_distance_time;
     
   }
   else
@@ -110,19 +116,6 @@ on message Car1_State
   
 }
 
-on message Distance_Adjust
-{ //Wird gesendet, wenn sich die gewünschte ACC-Entfernung ändert. Übernehmen Sie die
-  //Werte, falls sie gültig sind (10 < x < 30).
-  write("Message: Distance_Adjust received => %d", (this.Distance_Adjust & 0x7F));
-  
-  if (car_distance > 10000 && car_distance < 30000)
-  {
-    acc_distance = car_distance;    
-  }
-  
-  sendSettings();
-  write("Distance change: %d", acc_distance);
-}
 
 on message Speed_Adjust
 { //Wird gesendet, wenn eine andere ACC-Wunschgeschwindigkeit eingestellt wird. Sind die
@@ -137,17 +130,38 @@ on message Speed_Adjust
   //write("Speed change: %d", acc_speed);
 }
 
+on message Distance_Adjust
+{ //Wird gesendet, wenn sich die gewünschte ACC-Entfernung ändert. Übernehmen Sie die
+  //Werte, falls sie gültig sind (10 < x < 30).
+  write("Message: Distance_Adjust received => %d", (this.Distance_Adjust));
+  
+  if (this.Distance_Adjust > 9 && this.Distance_Adjust < 31)
+  {
+     acc_distance = this.Distance_Adjust;    
+  }
+ 
+  
+  sendSettings();
+  //write("Distance change: %d", acc_distance);
+}
+  
 on message Distance_Current
 { //Hier gilt es, den empfangenen Abstandswert zu analysieren und durch Bremsen und
   //Beschleunigen entsprechend darauf zu reagieren. Dieser Teil der Implementierung wird
   //Ihre eigentliche ACC-Regelung enthalten.
   //write("Message: Distance_Current received: %d", this.Distance_Current);
+  
   car_distance = this.Distance_Current;
+  write("Message: car distance: %d", car_distance);
+  write("Message: car speed: %d", car_speed);
+  
+  car_distance_time = (car_distance /10) / (car_speed / 3.6);
+  write("Message: car distance time: %d", car_distance_time);
   //write("Message: car distance set: %d", car_distance);
   
   if (acc_active)
   {
-    write("IST: %d\tSOLL: %d", car_speed, acc_speed);
+    //write("IST: %d\tSOLL: %d", car_speed, acc_speed);
     if (car_speed < acc_speed)
     {
       sendACCAccelerate(1);
