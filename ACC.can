@@ -12,8 +12,8 @@ variables
   message Display_State msgDisplay;
   message ACC_Error msgError;
   
-  int acc_err;
-  int acc_active;
+  byte acc_err;
+  byte acc_active;
   dword car_position;
   
   byte car_speed;
@@ -21,7 +21,7 @@ variables
  
   byte acc_distance;
   
-  dword car_distance;
+  word car_distance;
   dword car_distance_time;
   
 }
@@ -77,7 +77,14 @@ on message ACC_State
     acc_err = 0;
     acc_active = 1;
     acc_speed = car_speed;
-    acc_distance = car_distance_time;
+    
+    if (car_distance_time >30)
+    {
+      acc_distance = 30;
+    }
+    else{
+      acc_distance = car_distance_time;
+    }
     
   }
   else
