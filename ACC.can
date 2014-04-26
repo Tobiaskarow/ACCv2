@@ -142,7 +142,11 @@ on message Distance_Adjust
   //Werte, falls sie gültig sind (10 < x < 30).
   write("Message: Distance_Adjust received => %d", (this.Distance_Adjust));
   
-  if (this.Distance_Adjust > 9 && this.Distance_Adjust < 31)
+  if (this.Distance_Adjust == 1 || this.Distance_Adjust == 127)
+  {
+    acc_distance = 15;
+  }
+  else if (this.Distance_Adjust > 9 && this.Distance_Adjust < 31)
   {
      acc_distance = this.Distance_Adjust;    
   }
